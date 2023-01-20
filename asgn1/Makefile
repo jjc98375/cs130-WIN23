@@ -1,3 +1,14 @@
+# CC = clang
+# CFLAGS = -Wall -Wextra -Werror -pedantic
+# all:
+# 	memory.o
+# memory.o: memory.c
+# 	$(CC) -c $(CFLAGS) memory.c
+# clean:
+# 	rm -f *.o memory
+
+
+
 CC = clang
 RM = rm -f
 
