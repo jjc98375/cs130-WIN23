@@ -15,6 +15,3 @@ $(TARGET): $(TARGET).c
 
 clean:
 	$(RM) *.o $(TARGET)
-
-format:
-	clang-format -i *.c
