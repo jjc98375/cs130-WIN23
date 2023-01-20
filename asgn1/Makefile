@@ -1,28 +1,45 @@
 # CC = clang
-# CFLAGS = -Wall -Wextra -Werror -pedantic
-# all:
-# 	memory.o
-# memory.o: memory.c
-# 	$(CC) -c $(CFLAGS) memory.c
+# RM = rm -f
+
+# # compiler flags:
+# #  -Wall turns on most, but not all, compiler warnings
+# CFLAGS  = -Wall -Wextra -Werror -pedantic
+
+# # the build target executable:
+# TARGET = memory
+
+# all: $(TARGET)
+
+# $(TARGET): $(TARGET).c
+# 	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c
+
 # clean:
-# 	rm -f *.o memory
+# 	$(RM) *.o $(TARGET)
 
-
+EXECBIN = memory
+SOURCES = $(wildcard *.c)
+OBJECTS = $(SOURCES:%.c=%.o)
+FORMATS = $(SOURCES:%.c=%.fmt)
 
 CC = clang
-RM = rm -f
+FORMAT = clang-format
+CFLAGS = -Wall -Wpedantic -Werror -Wextra
 
-# compiler flags:
-#  -Wall turns on most, but not all, compiler warnings
-CFLAGS  = -Wall -Wextra -Werror -pedantic
+.PHONY: all clean format
 
-# the build target executable:
-TARGET = memory
+all: $(EXECBIN)
 
-all: $(TARGET)
+$(EXECBIN): $(OBJECTS)
+	$(CC) -o $@ $^
 
-$(TARGET): $(TARGET).c
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c
+%.0: %.c
+	$(CC) $(CFLAGS) -c $<
 
-clean:
-	$(RM) *.o $(TARGET)
+clean: 
+	rm -f $(EXECBIN) $(OBJECTS)
+
+format: $(FORMATS)
+
+%.fmt: %.c
+	$(FORMAT) -i $<
+	touch $@
