@@ -1,17 +1,3 @@
-# CC = clang
-# CFLAGS = -Wall -Wextra -Werror -pedantic
-# all:
-# 	hello
-# hello: hello.o
-# 	$(CC) $(CFLAGS) -o hello hello.o
-# hello.o: hello.c
-# 	$(CC) -c $(CFLAGS) hello.c
-# clean:
-# 	rm -f *.o hello
-
-
-
-
 CC = clang
 RM = rm -f
 
