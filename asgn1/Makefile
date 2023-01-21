@@ -1,10 +1,32 @@
+# CC = clang
+# CFLAGS = -Wall -Wextra -Werror -pedantic
+# all:
+# 	hello
+# hello: hello.o
+# 	$(CC) $(CFLAGS) -o hello hello.o
+# hello.o: hello.c
+# 	$(CC) -c $(CFLAGS) hello.c
+# clean:
+# 	rm -f *.o hello
+
+
+
+
 CC = clang
-CFLAGS = -Wall -Wextra -Werror -pedantic
+RM = rm -f
 
-all: memory
+# compiler flags:
+#  -g    adds debugging information to the executable file
+#  -Wall turns on most, but not all, compiler warnings
+CFLAGS  = -g -Wall -Wextra -Werror -pedantic
 
-memory: memory.o
-	$(CC) -o memory memory.o
+# the build target executable:
+TARGET = memory
+
+all: $(TARGET)
+
+$(TARGET): $(TARGET).c
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c
 
 clean:
-	rm memory *.o
+	$(RM) *.o $(TARGET)
