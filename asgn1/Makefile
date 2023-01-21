@@ -1,5 +1,4 @@
 # CC = clang
-# RM = rm -f
 
 # # compiler flags:
 # #  -Wall turns on most, but not all, compiler warnings
@@ -10,11 +9,25 @@
 
 # all: $(TARGET)
 
-# $(TARGET): $(TARGET).c
-# 	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c
+# $(TARGET): $(TARGET)
+# 	$(CC) -o $@ $^
+
+# %.o: %.c
+# 	$(CC) $(CFLAGS) -c -o $@ $^
 
 # clean:
-# 	$(RM) *.o $(TARGET)
+# 	rm -rf $(TARGET) *.o
+
+
+# all:
+# 	$(CC) $(CFLAGS) memory.c -o memory.o
+
+
+
+
+
+
+
 
 EXECBIN = memory
 SOURCES = $(wildcard *.c)
@@ -32,7 +45,7 @@ all: $(EXECBIN)
 $(EXECBIN): $(OBJECTS)
 	$(CC) -o $@ $^
 
-%.0: %.c
+%.o: %.c
 	$(CC) $(CFLAGS) -c $<
 
 clean: 
