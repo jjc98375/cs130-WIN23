@@ -3,7 +3,6 @@
 #include <string.h>
 #include <fcntl.h>
 
-
 int main() {
 
     char command[4];
