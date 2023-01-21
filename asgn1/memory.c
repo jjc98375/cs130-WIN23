@@ -55,6 +55,7 @@ int main() {
                     }
                 } while (read_more > 0);
                 close(fd);
+                return 0;
             }
 
         } else if (strcmp(command, "set ") == 0) {
@@ -88,6 +89,7 @@ int main() {
                         } while (read_more > 0);
 
                         close(fd);
+                        return 0;
 
                     } else if (nAppear == 0 && (buf[0] == '\0' || buf[0] == ' ')) {
                         write(2, "Invalid Command\n", 16);
@@ -112,4 +114,6 @@ int main() {
         write(2, "Invalid Command\n", 16);
         return 1;
     }
+
+    return 0;
 }
