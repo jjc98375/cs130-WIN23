@@ -1,23 +1,8 @@
-
-
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
 
-// char[] request = a buffer
-// char[] buffer = a buffer of length 1
-// int out_fd = some fd for the target file
-
-// while(read from stdin into buffer)
-//   if buffer[0] == '\n':
-//     //request header is done, request will contain file.txt
-//     // store request in some place like a struct. structs are good for passing to your hlper functions
-//   if buffer[0] == ' ' and request isnt done:
-//     // parse request, request will contain for example "get" or "set"
-//     // clear request
-//   else: // we're past the header
-//     // write single byte buffer to out_fd
 
 int main() {
 
