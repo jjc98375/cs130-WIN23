@@ -1,11 +1,19 @@
-CC = clang
-CFLAGS = -Wall -Werror -Wextra -pedantic
-all: memory
-memory: memory.o
-	$(CC) $(CFLAGS) -o memory memory.o
-memory.o: memory.c
-	$(CC) -c $(CFLAGS) memory.c
+CFLAGS  = -Wall -Wextra -Werror -pedantic  
+CC      = clang $(CFLAGS) 
+TARGET  = memory
+
+memory:$(TARGET)
+all:$(TARGET)
+
+$(TARGET): $(TARGET).o
+	$(CC) -o $(TARGET) $(TARGET).o
+
+$(TARGET).o: $(TARGET).c
+	$(CC) $(CFLAGS) -c $(TARGET).c
+
 clean:
-	rm -f *.o memory
+	rm $(TARGET) $(TARGET).o
+
 format: 
 	clang-format -i *.c
+
