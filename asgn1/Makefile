@@ -1,5 +1,5 @@
 CC 		= clang
-CFLAGS 	= -Wall -Werror -Wextra -pedantic
+CFLAGS 	= -g -Wall -Werror -Wextra -pedantic
 
 all: memory
 
