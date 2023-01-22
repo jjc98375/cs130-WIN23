@@ -10,5 +10,3 @@ clean:
 	rm -f *.o memory
 format: 
 	clang-format -i *.c
-
-
