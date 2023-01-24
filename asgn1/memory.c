@@ -43,7 +43,7 @@ int main() {
                     } else if (nAppear == 0 && (buf[0] == '\0' || buf[0] == ' ')) {
                         write(2, "Invalid Command\n", 16);
                         return 1;
-                    } else if (buf[0] >= 0 && buf[0] <= 255) {
+                    } else if (buf[0] >= 33 && buf[0] <= 126) {
                         file[index] = buf[0];
                         index++;
                     } else { //none ascii character
@@ -134,7 +134,7 @@ int main() {
                     } else if (nAppear == 0 && (buf[0] == '\0' || buf[0] == ' ')) {
                         write(2, "Invalid Command\n", 16);
                         return 1;
-                    } else if (buf[0] >= 0 && buf[0] <= 255) {
+                    } else if (buf[0] >= 33 && buf[0] <= 126) {
                         file[index] = buf[0];
                         index++;
                     } else { //none ascii character
