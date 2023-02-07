@@ -23,7 +23,7 @@ void doWork(int socketfd) {
 
     char realURL[70]; // foo.txt
     memcpy(realURL, URL + 1, 69);
-    write(1, realURL, strlen(realURL));
+    // write(1, realURL, strlen(realURL));
 
     retrieveHTTP(socketfd, &statusCode); //we read until the first \r\n
 
@@ -34,7 +34,6 @@ void doWork(int socketfd) {
     }
 
     if (statusCode != 1000) {
-        fprintf(stderr, "HERE?\n");
         send_response(socketfd, statusCode);
     }
 
@@ -61,25 +60,35 @@ void doWork(int socketfd) {
 
                 // fprintf(stderr, "Permission denied when trying to open file.txt\n");
                 // exit(EXIT_FAILURE);
-            } else {
-
-                fprintf(stderr, "What?");
             }
+            send_response(socketfd, statusCode);
         } else {
+
+            // int read_more;
+            // char inner_buf[BUF_SIZE];
+            // do {
+            //     read_more = read(fd, inner_buf, BUF_SIZE);
+            //     if (read_more > 0) {
+            //         write(1, inner_buf, read_more);
+            //     }
+            // } while (read_more > 0);
+
+            // statusCode = 200;
+
             struct stat st;
             if (stat(realURL, &st) == -1) {
                 perror("stat");
             }
+            int file_length = st.st_size;
+            fprintf(stderr, "%d\n", file_length);
 
-            fprintf(stderr, "What?");
-            fprintf(stderr, "File size: %ld\n", st.st_size);
+            char buf[100];
+            memset(buf, 0, 100);
+            sprintf(buf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_length);
+            write_all(socketfd, buf, strlen(buf));
+            pass_bytes(fd, socketfd, file_length);
 
-            int pb = pass_bytes(fd, socketfd, st.st_size);
-            fprintf(stderr, "passbyte code is %d\n", pb);
-            statusCode = 200;
-
-            fprintf(stderr, "What?");
-            fprintf(stderr, "status Code is %d\n", statusCode);
+            // fprintf(socketfd, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_length);
         }
         close(fd);
 
@@ -105,10 +114,11 @@ void doWork(int socketfd) {
             write_all(fdTruncate, messageBody, contentLengthValue);
             statusCode = 200;
         }
+
+        send_response(socketfd, statusCode);
+
         close(fdTruncate);
     }
-
-    send_response(socketfd, statusCode);
 
     free(method);
     free(URL);

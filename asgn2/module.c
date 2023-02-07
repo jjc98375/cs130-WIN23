@@ -43,11 +43,10 @@ int check_validity_of_character(const char *s) {
 
 void send_response(int socketfd, int code) {
 
-    char buf[BUF_SIZE];
-    memset(buf, 0, BUF_SIZE);
+    char buf[100];
+    memset(buf, 0, 100);
 
     const char *phrase = Phrase(code);
-
     sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Length: %d\r\n\r\n%s\n", code, phrase,
         (int) strlen(phrase), phrase);
     write_all(socketfd, buf, strlen(buf));
