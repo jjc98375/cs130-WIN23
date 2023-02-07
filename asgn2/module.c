@@ -11,47 +11,41 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-
 //maybe use 0666
-
-
-
 
 //helps to get the right phrase given the status code
 const char *Phrase(int code) {
     switch (code) {
-        case 200: return "OK";
-        case 201: return "Created";
-        case 400: return "Bad Request";
-        case 403: return "Forbidden";
-        case 404: return "Not Found";
-        case 500: return "Internal Server Error";
-        case 501: return "Not Implemented";
-        case 505: return "Version Not Supported";
+    case 200: return "OK";
+    case 201: return "Created";
+    case 400: return "Bad Request";
+    case 403: return "Forbidden";
+    case 404: return "Not Found";
+    case 500: return "Internal Server Error";
+    case 501: return "Not Implemented";
+    case 505: return "Version Not Supported";
     }
     return NULL;
 }
 
-
-int check_validity_of_character(const char* s) {
+int check_validity_of_character(const char *s) {
     for (unsigned long i = 1; i < strlen(s); i++) {
-        if( s[i] != '.' && s[i] != '-' && isalnum(s[i]) == 0) {
+        if (s[i] != '.' && s[i] != '-' && isalnum(s[i]) == 0) {
             //400
             return 400;
             // fprintf(stderr, "invalid characters on it\n");
             // exit(EXIT_FAILURE);
-        } 
+        }
     }
     //valid
     return 0;
 }
 
-
 void send_response(int socketfd, int code) {
 
     char buf[BUF_SIZE];
     memset(buf, 0, BUF_SIZE);
-    
+
     const char *phrase = Phrase(code);
 
     sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Length: %d\r\n\r\n%s\n", code, phrase,
@@ -59,24 +53,22 @@ void send_response(int socketfd, int code) {
     write_all(socketfd, buf, strlen(buf));
 }
 
+void retrieveMethod(int socketfd, char *method, int *statusCode) {
 
-
-
-
-void retrieveMethod(int socketfd, char* method, int* statusCode) {
-    
     char buf[1];
     int index = 0;
     int bytes_read;
     do {
-        if(index == 9) {
+        if (index == 9) {
             // fprintf(stderr, "character out of range from method from request line\n");
             method[index] = buf[0];
-            *statusCode = 400;
+            if (400 < *statusCode) {
+                *statusCode = 400;
+            }
             return;
         }
         bytes_read = read(socketfd, buf, 1);
-        if(bytes_read == -1) {  
+        if (bytes_read == -1) {
             //read failed
             *statusCode = 500;
             return;
@@ -89,18 +81,21 @@ void retrieveMethod(int socketfd, char* method, int* statusCode) {
                     method[index] = buf[0];
                 }
                 index++;
-            } 
+            }
         }
-    } while(bytes_read > 0 );
+    } while (bytes_read > 0);
 
     //check the validity of character
     for (unsigned long i = 0; i < strlen(method); i++) {
-        if( ((method[i] >= 'a') && (method[i] <= 'z')) || ((method[i] >= 'A') && (method[i] <= 'Z')) ) {
+        if (((method[i] >= 'a') && (method[i] <= 'z'))
+            || ((method[i] >= 'A') && (method[i] <= 'Z'))) {
             continue;
         } else {
             //400
             // fprintf(stderr, "invalid character from method from request line\n");
-            *statusCode = 400;
+            if (400 < *statusCode) {
+                *statusCode = 400;
+            }
             return;
         }
     }
@@ -109,25 +104,26 @@ void retrieveMethod(int socketfd, char* method, int* statusCode) {
     if (strcmp(method, "GET") != 0 && strcmp(method, "PUT") != 0) {
         //501
         // fprintf(stderr, "method was not GET or PUT\n");
-        if(*statusCode != 400) {
+        if (501 < *statusCode) {
             *statusCode = 501;
         }
         return;
     }
-
 }
 
-void retrieveURL(int socketfd, char* URL, int* statusCode) {
-    
+void retrieveURL(int socketfd, char *URL, int *statusCode) {
+
     char buf[1];
     int index = 0;
     int bytes_read;
     do {
-        if(index == 65) {
+        if (index == 65) {
             //400
             // fprintf(stderr, "character out of range from URL from request line\n");
             URL[index] = 0;
-            *statusCode = 400;
+            if (400 < *statusCode) {
+                *statusCode = 400;
+            }
             return;
         }
         bytes_read = read(socketfd, buf, 1);
@@ -140,18 +136,22 @@ void retrieveURL(int socketfd, char* URL, int* statusCode) {
             }
             index++;
         }
-    } while(bytes_read > 0 );
+    } while (bytes_read > 0);
 
     if (index < 2 || URL[0] != '/') {
         //400
         // fprintf(stderr, "illformated URL\n");
-        *statusCode = 400;
+        if (400 < *statusCode) {
+            *statusCode = 400;
+        }
         return;
     }
 
     //check the validity of character
-    if ( check_validity_of_character(URL) == 400) {
-        *statusCode = 400;
+    if (check_validity_of_character(URL) == 400) {
+        if (400 < *statusCode) {
+            *statusCode = 400;
+        }
         return;
     }
 }
@@ -159,14 +159,16 @@ void retrieveURL(int socketfd, char* URL, int* statusCode) {
 //from here you should and read all
 //this part is where I'm fucked I think
 
-void retrieveHTTP(int socketfd, int* statusCode) {
-    
+void retrieveHTTP(int socketfd, int *statusCode) {
+
     char httpContent[6];
     int bytes_read = read(socketfd, httpContent, 5);
     if (bytes_read < 5 || strncmp(httpContent, "HTTP/", 5) != 0) {
         //400
         // fprintf(stderr, "illformated http itself\n");
-        *statusCode = 400;
+        if (400 < *statusCode) {
+            *statusCode = 400;
+        }
         return;
     }
 
@@ -178,38 +180,37 @@ void retrieveHTTP(int socketfd, int* statusCode) {
     do {
         bytes_read = read(socketfd, buf, 1);
         if (bytes_read == 1) {
-            
+
             if (buf[0] == '\r') {
                 read(socketfd, buf, 1);
                 versionContent[index] = 0;
-            } 
-            else {
+            } else {
                 versionContent[index] = buf[0];
             }
             index++;
         }
-    } while(bytes_read > 0);
+    } while (bytes_read > 0);
 
     if (strlen(versionContent) != 3) {
         //1.10 is ill formatted
-        *statusCode = 400;
+        if (400 < *statusCode) {
+            *statusCode = 400;
+        }
         return;
     } else {
-        if(strncmp(versionContent, "1.1", 3) != 0) {
+        if (strncmp(versionContent, "1.1", 3) != 0) {
             //505
-            *statusCode = 505;
+            if (505 < *statusCode) {
+                *statusCode = 505;
+            }
             // fprintf(stderr, "illformated http version\n");
             return;
         }
     }
-
 }
 
-
-
-
 //I really do hope '\n' come after '\r'
-int parseHeader(int socketfd, int* statusCode) {
+int parseHeader(int socketfd, int *statusCode) {
 
     int nbytes = 128;
     int contentLengthValue = -1;
@@ -228,20 +229,20 @@ int parseHeader(int socketfd, int* statusCode) {
     // bool firstTimeHeader = true;
 
     char buf[1];
-    while(1) {
+    while (1) {
 
         //check the first read of key
         int firstread = read(socketfd, buf, 1);
-        if(firstread == 1) {
+        if (firstread == 1) {
             //it reached to the end of the header line
-            if(buf[0] == '\r') {
-                read(socketfd, buf, 1); 
+            if (buf[0] == '\r') {
+                read(socketfd, buf, 1);
 
-                //if it is not get and stopped 
+                //if it is not get and stopped
                 // if (firstTimeHeader && (strncmp(method, "GET", 3) != 0)) {
                 //     fprintf(stderr, "Non-GET method have no header, which is false\n");
                 //     exit(EXIT_FAILURE);
-                // } 
+                // }
 
                 return contentLengthValue;
             } else {
@@ -250,37 +251,42 @@ int parseHeader(int socketfd, int* statusCode) {
             }
         } else {
             //400
-            *statusCode = 400;
+            if (400 < *statusCode) {
+                *statusCode = 400;
+            }
             return contentLengthValue;
             // fprintf(stderr, "less than 1 character for key so ill formated\n");
             // exit(EXIT_FAILURE);
         }
 
-
         //read the key parts
-        while(countKey < nbytes) {
+        while (countKey < nbytes) {
             int bytes_read = read(socketfd, buf, 1);
             if (bytes_read == 1) {
 
-                if(buf[0] == '\r') {
+                if (buf[0] == '\r') {
                     //400
-                    *statusCode = 400;
-                    break;
+                    if (400 < *statusCode) {
+                        *statusCode = 400;
+                    }
+                    return contentLengthValue;
 
                     // fprintf(stderr, "can't have \r\n before : in key; ill formated\n");
                     // exit(EXIT_FAILURE);
                 }
 
-                if(buf[0] == ':') {
+                if (buf[0] == ':') {
                     bytes_read = read(socketfd, buf, 1); // read the empty space
-                    if(bytes_read == 1 && buf[0] == ' ') {
+                    if (bytes_read == 1 && buf[0] == ' ') {
                         validity = true;
                         break;
-                    } 
+                    }
                     //": " not match
                     else {
                         //400
-                        *statusCode = 400;
+                        if (400 < *statusCode) {
+                            *statusCode = 400;
+                        }
                         return contentLengthValue;
 
                         // fprintf(stderr, "the colon and space not came together\n");
@@ -289,42 +295,44 @@ int parseHeader(int socketfd, int* statusCode) {
                 } else {
                     key[countKey] = buf[0];
                 }
-
-            } 
+            }
             countKey++;
         }
-        //out of range 
-        if(validity == false) {
+        //out of range
+        if (validity == false) {
             //400
-            *statusCode = 400;
+            if (400 < *statusCode) {
+                *statusCode = 400;
+            }
             return contentLengthValue;
 
             // fprintf(stderr, "format of key is out of range\n");
             // exit(EXIT_FAILURE);
         }
 
-
         //check if there are right characters
-        if(check_validity_of_character(key) == 400) {
-            *statusCode = 400;
+        if (check_validity_of_character(key) == 400) {
+            if (400 < *statusCode) {
+                *statusCode = 400;
+            }
             return contentLengthValue;
         };
 
         //check if the key is content-length
-        if(strncmp(key, "Content-Length", 14) == 0) {
+        if (strncmp(key, "Content-Length", 14) == 0) {
             contentLength = true;
         }
 
         validity = false;
 
-
-
         //check the first read of value
         firstread = read(socketfd, buf, 1);
-        if(firstread == 1) {
-            if(buf[0] == '\r') {
+        if (firstread == 1) {
+            if (buf[0] == '\r') {
                 //400
-                *statusCode = 400;
+                if (400 < *statusCode) {
+                    *statusCode = 400;
+                }
                 return contentLengthValue;
 
                 // fprintf(stderr, "less than 1 character for value so ill formated\n");
@@ -335,45 +343,49 @@ int parseHeader(int socketfd, int* statusCode) {
             }
         } else {
             //400
+            if (400 < *statusCode) {
                 *statusCode = 400;
-                return contentLengthValue;
+            }
+            return contentLengthValue;
 
             // fprintf(stderr, "less than 1 character for value so ill formated\n");
             // exit(EXIT_FAILURE);
         }
 
-
         //read the value parts
-        while(countValue < nbytes) {
+        while (countValue < nbytes) {
             int bytes_read = read(socketfd, buf, 1);
             if (bytes_read == 1) {
-                if(buf[0] == '\r') {
+                if (buf[0] == '\r') {
                     read(socketfd, buf, 1);
                     validity = true;
                     break;
                 } else {
                     value[countValue] = buf[0];
                 }
-            } 
+            }
             countValue++;
         }
 
         //out of range
-        if(validity == false) {
+        if (validity == false) {
             //400
+            if (400 < *statusCode) {
                 *statusCode = 400;
-                return contentLengthValue;
+            }
+            return contentLengthValue;
 
             // fprintf(stderr, "value characters are out of range");
             // exit(EXIT_FAILURE);
         }
 
-
         //right characters
         for (unsigned long i = 0; i < strlen(value); i++) {
             //400
             if (value[i] < 33 || value[i] > 126) {
-                *statusCode = 400;
+                if (400 < *statusCode) {
+                    *statusCode = 400;
+                }
                 return contentLengthValue;
 
                 // fprintf(stderr, "value have a invalid character\n");
@@ -382,23 +394,20 @@ int parseHeader(int socketfd, int* statusCode) {
         }
 
         //if content-length is exist, store the value of it
-        if(contentLength == true) {
+        if (contentLength == true) {
             contentLengthValue = atoi(value);
         }
 
-        
         memset(key, 0, nbytes);
         memset(value, 0, nbytes);
-        
+
         validity = false;
         contentLength = false;
 
         countKey = 0;
         countValue = 0;
-
-    }    
+    }
 
     fprintf(stderr, "Why the fuck you are outside of while loop from parseHeader\n");
     exit(EXIT_FAILURE);
-    
 }
