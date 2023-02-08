@@ -125,8 +125,8 @@ void retrieveURL(int socketfd, char *URL, int *statusCode) {
     int bytes_read;
 
     bytes_read = read(socketfd, buf, 1);
-    if(bytes_read == 1) {
-        if(buf[0] != '/') {
+    if (bytes_read == 1) {
+        if (buf[0] != '/') {
             *statusCode = 400;
             readTheRest(socketfd);
             return;

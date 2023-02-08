@@ -54,7 +54,7 @@ void doWork(int socketfd) {
 
         struct stat ps;
         stat(realURL, &ps);
-        if(S_ISDIR(ps.st_mode) == 1) {
+        if (S_ISDIR(ps.st_mode) == 1) {
             statusCode = 403;
             send_response(socketfd, statusCode);
             return;
@@ -78,8 +78,7 @@ void doWork(int socketfd) {
                 // exit(EXIT_FAILURE);
             }
             send_response(socketfd, statusCode);
-        } 
-        else {
+        } else {
             fprintf(stderr, "here?\n");
 
             // int read_more;
@@ -105,7 +104,6 @@ void doWork(int socketfd) {
             sprintf(buf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_length);
             write_all(socketfd, buf, strlen(buf));
             pass_bytes(fd, socketfd, file_length);
-
         }
         close(fd);
 
