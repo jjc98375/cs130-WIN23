@@ -22,12 +22,10 @@ void doWork(int socketfd) {
         return;
     }
 
-    char *URL = (char *) malloc(70); // /foo.txt
-    retrieveURL(socketfd, URL, &statusCode);
+    // char *URL = (char *) malloc(70); // /foo.txt
 
     char realURL[70]; // foo.txt
-    memcpy(realURL, URL + 1, 69);
-    // write(1, realURL, strlen(realURL));
+    retrieveURL(socketfd, realURL, &statusCode);
 
     retrieveHTTP(socketfd, &statusCode); //we read until the first \r\n
     if (statusCode == 505) {
@@ -54,6 +52,14 @@ void doWork(int socketfd) {
     if (strncmp(method, "GET", 3) == 0) {
         int fd = open(realURL, O_RDONLY, 0666);
 
+        struct stat ps;
+        stat(realURL, &ps);
+        if(S_ISDIR(ps.st_mode) == 1) {
+            statusCode = 403;
+            send_response(socketfd, statusCode);
+            return;
+        }
+
         if (fd == -1) {
 
             if (errno == ENOENT) {
@@ -67,12 +73,14 @@ void doWork(int socketfd) {
             else if (errno == EACCES) {
                 //403
                 statusCode = 403;
-
+                fprintf(stderr, "here?\n");
                 // fprintf(stderr, "Permission denied when trying to open file.txt\n");
                 // exit(EXIT_FAILURE);
             }
             send_response(socketfd, statusCode);
-        } else {
+        } 
+        else {
+            fprintf(stderr, "here?\n");
 
             // int read_more;
             // char inner_buf[BUF_SIZE];
@@ -98,7 +106,6 @@ void doWork(int socketfd) {
             write_all(socketfd, buf, strlen(buf));
             pass_bytes(fd, socketfd, file_length);
 
-            // fprintf(socketfd, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_length);
         }
         close(fd);
 
@@ -131,7 +138,7 @@ void doWork(int socketfd) {
     }
 
     free(method);
-    free(URL);
+    // free(URL);
 }
 
 int main(int argc, char *argv[]) {

@@ -42,7 +42,6 @@ int check_validity_of_character(const char *s) {
 }
 
 void send_response(int socketfd, int code) {
-
     char buf[100];
     memset(buf, 0, 100);
 
@@ -50,6 +49,14 @@ void send_response(int socketfd, int code) {
     sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Length: %d\r\n\r\n%s\n", code, phrase,
         (int) strlen(phrase) + 1, phrase);
     write_all(socketfd, buf, strlen(buf));
+}
+
+void readTheRest(int socketfd) {
+    int read_more;
+    char inner_buf[BUF_SIZE];
+    do {
+        read_more = read(socketfd, inner_buf, BUF_SIZE);
+    } while (read_more == BUF_SIZE);
 }
 
 void retrieveMethod(int socketfd, char *method, int *statusCode) {
@@ -64,6 +71,7 @@ void retrieveMethod(int socketfd, char *method, int *statusCode) {
             if (400 < *statusCode) {
                 *statusCode = 400;
             }
+            readTheRest(socketfd);
             return;
         }
         bytes_read = read(socketfd, buf, 1);
@@ -95,6 +103,7 @@ void retrieveMethod(int socketfd, char *method, int *statusCode) {
             if (400 < *statusCode) {
                 *statusCode = 400;
             }
+            readTheRest(socketfd);
             return;
         }
     }
@@ -104,6 +113,7 @@ void retrieveMethod(int socketfd, char *method, int *statusCode) {
         //501
         // fprintf(stderr, "method was not GET or PUT\n");
         *statusCode = 501;
+        readTheRest(socketfd);
         return;
     }
 }
@@ -113,13 +123,24 @@ void retrieveURL(int socketfd, char *URL, int *statusCode) {
     char buf[1];
     int index = 0;
     int bytes_read;
+
+    bytes_read = read(socketfd, buf, 1);
+    if(bytes_read == 1) {
+        if(buf[0] != '/') {
+            *statusCode = 400;
+            readTheRest(socketfd);
+            return;
+        }
+    }
+
     do {
-        if (index == 65) {
+        if (index == 64) {
             //400
             // fprintf(stderr, "character out of range from URL from request line\n");
             URL[index] = 0;
             if (400 < *statusCode) {
                 *statusCode = 400;
+                readTheRest(socketfd);
             }
             return;
         }
@@ -135,11 +156,12 @@ void retrieveURL(int socketfd, char *URL, int *statusCode) {
         }
     } while (bytes_read > 0);
 
-    if (index < 2 || URL[0] != '/') {
+    if (index < 1) {
         //400
         // fprintf(stderr, "illformated URL\n");
         if (400 < *statusCode) {
             *statusCode = 400;
+            readTheRest(socketfd);
         }
         return;
     }
@@ -148,6 +170,7 @@ void retrieveURL(int socketfd, char *URL, int *statusCode) {
     if (check_validity_of_character(URL) == 400) {
         if (400 < *statusCode) {
             *statusCode = 400;
+            readTheRest(socketfd);
         }
         return;
     }
@@ -165,6 +188,7 @@ void retrieveHTTP(int socketfd, int *statusCode) {
         // fprintf(stderr, "illformated http itself\n");
         if (400 < *statusCode) {
             *statusCode = 400;
+            readTheRest(socketfd);
         }
         return;
     }
@@ -192,12 +216,14 @@ void retrieveHTTP(int socketfd, int *statusCode) {
         //1.10 is ill formatted
         if (400 < *statusCode) {
             *statusCode = 400;
+            readTheRest(socketfd);
         }
         return;
     } else {
         if (strncmp(versionContent, "1.1", 3) != 0) {
             //505
             *statusCode = 505;
+            readTheRest(socketfd);
             // fprintf(stderr, "illformated http version\n");
             return;
         }
@@ -248,6 +274,7 @@ int parseHeader(int socketfd, int *statusCode) {
             //400
             if (400 < *statusCode) {
                 *statusCode = 400;
+                readTheRest(socketfd);
             }
             return contentLengthValue;
             // fprintf(stderr, "less than 1 character for key so ill formated\n");
@@ -263,6 +290,7 @@ int parseHeader(int socketfd, int *statusCode) {
                     //400
                     if (400 < *statusCode) {
                         *statusCode = 400;
+                        readTheRest(socketfd);
                     }
                     return contentLengthValue;
 
@@ -281,6 +309,7 @@ int parseHeader(int socketfd, int *statusCode) {
                         //400
                         if (400 < *statusCode) {
                             *statusCode = 400;
+                            readTheRest(socketfd);
                         }
                         return contentLengthValue;
 
@@ -298,6 +327,7 @@ int parseHeader(int socketfd, int *statusCode) {
             //400
             if (400 < *statusCode) {
                 *statusCode = 400;
+                readTheRest(socketfd);
             }
             return contentLengthValue;
 
@@ -309,6 +339,7 @@ int parseHeader(int socketfd, int *statusCode) {
         if (check_validity_of_character(key) == 400) {
             if (400 < *statusCode) {
                 *statusCode = 400;
+                readTheRest(socketfd);
             }
             return contentLengthValue;
         };
@@ -327,6 +358,7 @@ int parseHeader(int socketfd, int *statusCode) {
                 //400
                 if (400 < *statusCode) {
                     *statusCode = 400;
+                    readTheRest(socketfd);
                 }
                 return contentLengthValue;
 
@@ -340,6 +372,7 @@ int parseHeader(int socketfd, int *statusCode) {
             //400
             if (400 < *statusCode) {
                 *statusCode = 400;
+                readTheRest(socketfd);
             }
             return contentLengthValue;
 
@@ -367,6 +400,7 @@ int parseHeader(int socketfd, int *statusCode) {
             //400
             if (400 < *statusCode) {
                 *statusCode = 400;
+                readTheRest(socketfd);
             }
             return contentLengthValue;
 
@@ -380,6 +414,7 @@ int parseHeader(int socketfd, int *statusCode) {
             if (value[i] < 33 || value[i] > 126) {
                 if (400 < *statusCode) {
                     *statusCode = 400;
+                    readTheRest(socketfd);
                 }
                 return contentLengthValue;
 

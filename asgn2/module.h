@@ -16,3 +16,5 @@ void retrieveMethod(int socketfd, char *method, int *statusCode);
 void retrieveURL(int socketfd, char *URL, int *statusCode);
 void retrieveHTTP(int socketfd, int *statusCode);
 int parseHeader(int socketfd, int *statusCode);
+void readTheRest(int socketfd);
+
