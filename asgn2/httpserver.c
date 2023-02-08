@@ -73,37 +73,35 @@ void doWork(int socketfd) {
             else if (errno == EACCES) {
                 //403
                 statusCode = 403;
-                fprintf(stderr, "here?\n");
                 // fprintf(stderr, "Permission denied when trying to open file.txt\n");
                 // exit(EXIT_FAILURE);
             }
             send_response(socketfd, statusCode);
         } else {
-            fprintf(stderr, "here?\n");
+
+            struct stat st;
+            if (stat(realURL, &st) == -1) {
+                perror("stat");
+            }
+
+            int file_length = st.st_size;
+
+            char buf[100];
+            memset(buf, 0, 100);
+            sprintf(buf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_length);
+            int lengthOfBuf = strlen(buf);
+
+            write_all(socketfd, buf, lengthOfBuf);
+            pass_bytes(fd, socketfd, file_length);
 
             // int read_more;
             // char inner_buf[BUF_SIZE];
             // do {
             //     read_more = read(fd, inner_buf, BUF_SIZE);
             //     if (read_more > 0) {
-            //         write(1, inner_buf, read_more);
+            //         write(socketfd, inner_buf, read_more);
             //     }
             // } while (read_more > 0);
-
-            // statusCode = 200;
-
-            struct stat st;
-            if (stat(realURL, &st) == -1) {
-                perror("stat");
-            }
-            int file_length = st.st_size;
-            fprintf(stderr, "%d\n", file_length);
-
-            char buf[100];
-            memset(buf, 0, 100);
-            sprintf(buf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_length);
-            write_all(socketfd, buf, strlen(buf));
-            pass_bytes(fd, socketfd, file_length);
         }
         close(fd);
 
