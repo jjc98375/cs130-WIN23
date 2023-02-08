@@ -15,14 +15,12 @@ void doWork(int socketfd) {
 
     int statusCode = 1000;
 
-    char *method = (char *) malloc(10);
+    char method[10];
     retrieveMethod(socketfd, method, &statusCode);
     if (statusCode == 501) {
         send_response(socketfd, statusCode);
         return;
     }
-
-    // char *URL = (char *) malloc(70); // /foo.txt
 
     char realURL[70]; // foo.txt
     retrieveURL(socketfd, realURL, &statusCode);
@@ -133,8 +131,7 @@ void doWork(int socketfd) {
         close(fdTruncate);
     }
 
-    free(method);
-    // free(URL);
+
 }
 
 int main(int argc, char *argv[]) {
