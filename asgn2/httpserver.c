@@ -17,6 +17,10 @@ void doWork(int socketfd) {
 
     char *method = (char *) malloc(10);
     retrieveMethod(socketfd, method, &statusCode);
+    if (statusCode == 501) {
+        send_response(socketfd, statusCode);
+        return;
+    }
 
     char *URL = (char *) malloc(70); // /foo.txt
     retrieveURL(socketfd, URL, &statusCode);
@@ -26,6 +30,10 @@ void doWork(int socketfd) {
     // write(1, realURL, strlen(realURL));
 
     retrieveHTTP(socketfd, &statusCode); //we read until the first \r\n
+    if (statusCode == 505) {
+        send_response(socketfd, statusCode);
+        return;
+    }
 
     int contentLengthValue = parseHeader(socketfd, &statusCode);
     //if it was PUT but no contentLegnth? invalid command
@@ -33,8 +41,10 @@ void doWork(int socketfd) {
         statusCode = 400;
     }
 
+    //if no 501 and 505 and then no 400, then
     if (statusCode != 1000) {
         send_response(socketfd, statusCode);
+        return;
     }
 
     char messageBody[contentLengthValue + 1];

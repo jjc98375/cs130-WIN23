@@ -48,7 +48,7 @@ void send_response(int socketfd, int code) {
 
     const char *phrase = Phrase(code);
     sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Length: %d\r\n\r\n%s\n", code, phrase,
-        (int) strlen(phrase), phrase);
+        (int) strlen(phrase) + 1, phrase);
     write_all(socketfd, buf, strlen(buf));
 }
 
@@ -103,9 +103,7 @@ void retrieveMethod(int socketfd, char *method, int *statusCode) {
     if (strcmp(method, "GET") != 0 && strcmp(method, "PUT") != 0) {
         //501
         // fprintf(stderr, "method was not GET or PUT\n");
-        if (501 < *statusCode) {
-            *statusCode = 501;
-        }
+        *statusCode = 501;
         return;
     }
 }
@@ -199,9 +197,7 @@ void retrieveHTTP(int socketfd, int *statusCode) {
     } else {
         if (strncmp(versionContent, "1.1", 3) != 0) {
             //505
-            if (505 < *statusCode) {
-                *statusCode = 505;
-            }
+            *statusCode = 505;
             // fprintf(stderr, "illformated http version\n");
             return;
         }
