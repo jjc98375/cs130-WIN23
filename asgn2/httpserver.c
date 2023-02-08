@@ -130,8 +130,6 @@ void doWork(int socketfd) {
 
         close(fdTruncate);
     }
-
-
 }
 
 int main(int argc, char *argv[]) {
