@@ -4,9 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 typedef struct queue {
-    void** array;
+    void **array;
     int in;
     int out;
     int size;
@@ -16,14 +15,12 @@ typedef struct queue {
 
 } queue_t;
 
-
-
 //constructor
-queue_t *queue_new(int size) { 
-    queue_t* q = malloc(sizeof(queue_t));
-    q->array = (void**)malloc(sizeof(void *) * size);
+queue_t *queue_new(int size) {
+    queue_t *q = malloc(sizeof(queue_t));
+    q->array = (void **) malloc(sizeof(void *) * size);
     q->size = size;
-    
+
     q->in = 0;
     q->out = 0;
 
@@ -51,7 +48,6 @@ void queue_delete(queue_t **q) {
     *q = NULL;
 }
 
-
 bool queue_push(queue_t *q, void *elem) {
     if (!q || !elem) {
         return false;
@@ -65,7 +61,6 @@ bool queue_push(queue_t *q, void *elem) {
     return true;
 }
 
-
 bool queue_pop(queue_t *q, void **elem) {
     if (!q) {
         return false;
@@ -78,4 +73,3 @@ bool queue_pop(queue_t *q, void **elem) {
     sem_post(&q->full);
     return true;
 }
-
