@@ -49,9 +49,10 @@ void queue_delete(queue_t **q) {
 }
 
 bool queue_push(queue_t *q, void *elem) {
-    if (!q || !elem) {
+    if (q == NULL || elem == NULL) {
         return false;
     }
+
     sem_wait(&q->full);
     pthread_mutex_lock(&q->lock);
     q->array[q->in] = elem;
@@ -62,9 +63,10 @@ bool queue_push(queue_t *q, void *elem) {
 }
 
 bool queue_pop(queue_t *q, void **elem) {
-    if (!q) {
+    if (q == NULL) {
         return false;
     }
+
     sem_wait(&q->empty);
     pthread_mutex_lock(&q->lock);
     *elem = q->array[q->out];
