@@ -46,18 +46,18 @@ The queue had 6 different attributes:
 ### Methods
 
 
-queue_new(int size)
+> queue_new(int size)
 
 Creates a new queue with the given size. Returns a pointer to the newly created queue_t structure.
 
-queue_push(queue_t _q, void_ elem)
+> queue_push(queue_t _q, void_ elem)
 
 Adds an element to the back of the queue. Blocks if the queue is full. Returns true if successful, false otherwise.
 
-queue_pop(queue_t *q, void **elem)
+> queue_pop(queue_t *q, void **elem)
 
 Removes an element from the front of the queue. Blocks if the queue is empty. Returns true if successful, false otherwise.
 
-queue_delete(queue_t **q)
+> queue_delete(queue_t **q)
 
 Deletes the given queue and frees all associated memory.
