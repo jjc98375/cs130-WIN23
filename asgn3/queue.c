@@ -11,10 +11,8 @@ typedef struct queue {
     int in;
     int out;
     int size;
-
     sem_t full, empty;
     pthread_mutex_t lock;
-
 } queue_t;
 
 //constructor
@@ -22,30 +20,24 @@ queue_t *queue_new(int size) {
     queue_t *q = malloc(sizeof(queue_t));
     q->array = (void **) malloc(sizeof(void *) * size);
     q->size = size;
-
     q->in = 0;
     q->out = 0;
-
     sem_init(&q->full, 0, q->size);
     sem_init(&q->empty, 0, 0);
     pthread_mutex_init(&q->lock, NULL);
-
     return q;
 }
 
 //destructor
 void queue_delete(queue_t **q) {
-
     if (q == NULL || *q == NULL) {
         return;
     }
 
     free((*q)->array);
-
     pthread_mutex_destroy(&((*q)->lock));
     sem_destroy(&((*q)->full));
     sem_destroy(&((*q)->empty));
-
     free(*q);
     *q = NULL;
 }
