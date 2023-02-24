@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "queue.h"
+
 typedef struct queue {
     void **array;
     int in;
