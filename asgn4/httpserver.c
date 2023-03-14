@@ -69,10 +69,7 @@ int main(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "t:")) != -1) {
         switch (opt) {
         case 't': num_of_thread = atoi(optarg); break;
-        default:
-            debug("Usage: %s [-t threads] <port>\n", argv[0]);
-            return EXIT_FAILURE;
-            //fprintf(stderr, "Usage: %s [-t threads] <port>\n", argv[0]); exit(EXIT_FAILURE);
+        default: debug("Usage: %s [-t threads] <port>\n", argv[0]); return EXIT_FAILURE;
         }
     }
 
@@ -105,25 +102,14 @@ int main(int argc, char **argv) {
     while (1) {
 
         intptr_t connfd = listener_accept(&sock); //gives a fd for each 'valid' connection
-        // fprintf(stderr, "here\n");
 
         if (connfd == -1) {
             errx(EXIT_FAILURE, "wasn't able to connect it");
         }
 
         // queue_push(Q, &connfd);
-
-        if (queue_push(Q, (void *) connfd)) {
-            // fprintf(stderr, "queue pushed\n");
-            // fprintf(stderr, "your before queue push connfd is %ld\n", connfd);
-        };
+        queue_push(Q, (void *) connfd);
     }
-
-    //FINISH THE THREADS
-    // for (int i = 0; i < num_of_thread; i++) {
-    //     pthread_join(threads[i], NULL);
-    // }
-    // printf("All threads have finished!\n");
 
     return EXIT_SUCCESS;
 }
@@ -165,8 +151,6 @@ void handle_get(conn_t *conn) {
     debug("handling get request for %s", uri);
 
     int statusCode;
-
-    // What are the steps in here?
 
     // 1. Open the file.
     // If  open it returns < 0, then use the result appropriately
@@ -253,12 +237,12 @@ void handle_put(conn_t *conn) {
     const Response_t *res = NULL; //here you initialized res
     debug("handling put request for %s", uri);
 
+    // Acquire the file creation lock, #1
+    pthread_mutex_lock(&mutex);
+
     // Check if file already exists before opening it.
     bool existed = access(uri, F_OK) == 0;
     debug("%s existed? %d", uri, existed);
-
-    // Acquire the file creation lock, #1
-    pthread_mutex_lock(&mutex);
 
     int fd = -1;
 
