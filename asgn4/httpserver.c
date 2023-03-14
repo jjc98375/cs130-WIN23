@@ -46,21 +46,22 @@ void audit(const char *method, const char *uri, uint16_t statusCode, int thread_
 //WORKER THREAD
 void *worker_thread(void *arg) {
     (void) arg;
-    // reqThread* reqT = (reqThread *) arg;
 
     while (1) {
 
-        long connfd = 0;
+        uintptr_t connfd = 0;
         if (queue_pop(Q, (void **) &connfd) == 0) {
             errx(EXIT_FAILURE, "queue failed to pop");
         }
-        if (connfd != -1) {
-            // fprintf(stderr, "you connected it successfully\n");
 
-            handle_connection(connfd);
-        }
+        // if (connfd != -1) {
+        // fprintf(stderr, "you connected it successfully\n");
+            fprintf(stderr, "WTF\n");
+
+        handle_connection((int)connfd);
+        // }
+        close(connfd);
     }
-
     return NULL;
 }
 
@@ -72,8 +73,8 @@ int main(int argc, char **argv) {
 
     while ((opt = getopt(argc, argv, "t:")) != -1) {
         switch (opt) {
-        case 't': num_of_thread = atoi(optarg); break;
-        default: fprintf(stderr, "Usage: %s [-t threads] <port>\n", argv[0]); exit(EXIT_FAILURE);
+            case 't': num_of_thread = atoi(optarg); break;
+            default: fprintf(stderr, "Usage: %s [-t threads] <port>\n", argv[0]); exit(EXIT_FAILURE);
         }
     }
 
@@ -91,15 +92,8 @@ int main(int argc, char **argv) {
 
     pthread_t threads[num_of_thread];
 
-    // reqThread **thread_pool = (reqThread **) malloc(sizeof(reqThread *) * num_of_thread);
-
     for (int i = 0; i < num_of_thread; i++) {
-
-        // thread_pool[i] = (reqThread *) malloc(sizeof(reqThread));
-        // thread_pool[i]->thread_id = 0;
-        // thread_pool[i]->thread = (pthread_t *) malloc(sizeof(pthread_t));
-        fprintf(stderr, "thread %d\n", i);
-
+    //    fprintf(stderr, "thread %d\n", i);
         if (pthread_create(&threads[i], NULL, worker_thread, NULL) != 0) {
             errx(EXIT_FAILURE, "pthread_create() failed");
         }
@@ -113,8 +107,8 @@ int main(int argc, char **argv) {
 
     while (1) {
 
-        long connfd = listener_accept(&sock); //gives a fd for each 'valid' connection
-        fprintf(stderr, "here\n");
+        intptr_t connfd = listener_accept(&sock); //gives a fd for each 'valid' connection
+        // fprintf(stderr, "here\n");
 
         if (connfd == -1) {
             errx(EXIT_FAILURE, "wasn't able to connect it");
@@ -123,29 +117,35 @@ int main(int argc, char **argv) {
         // queue_push(Q, &connfd);
 
         if (queue_push(Q, (void *) connfd)) {
-            fprintf(stderr, "queue pushed\n");
-            fprintf(stderr, "your before queue push connfd is %ld\n", connfd);
+            // fprintf(stderr, "queue pushed\n");
+            // fprintf(stderr, "your before queue push connfd is %ld\n", connfd);
         };
     }
 
+
+
+
     //FINISH THE THREADS
-    for (int i = 0; i < num_of_thread; i++) {
-        pthread_join(threads[i], NULL);
-    }
-    printf("All threads have finished!\n");
+    // for (int i = 0; i < num_of_thread; i++) {
+    //     pthread_join(threads[i], NULL);
+    // }
+    // printf("All threads have finished!\n");
 
     return EXIT_SUCCESS;
 }
 
 void handle_connection(int connfd) {
+    fprintf(stderr, "in handle connection\n");
 
     conn_t *conn = conn_new(connfd);
     const Response_t *res = conn_parse(conn);
 
     if (res != NULL) {
+        fprintf(stderr, "invalid response\n");
         conn_send_response(conn, res);
     } else {
         debug("%s", conn_str(conn));
+        fprintf(stderr, "valid response\n");
 
         const Request_t *req = conn_get_request(conn);
         if (req == &REQUEST_GET) {
@@ -157,13 +157,22 @@ void handle_connection(int connfd) {
         }
     }
     conn_delete(&conn);
+
 }
 
 void handle_get(conn_t *conn) {
 
+
+    fprintf(stderr, "in get\n");
+
+    // pthread_mutex_lock(&mutex);
+
+    int thread_id = 0;
     char *chid = conn_get_header(conn, "Request-Id");
-    int thread_id = atoi(chid);
-    fprintf(stderr, "thread id is %d", thread_id);
+    if(chid != NULL) {
+        thread_id = atoi(chid);
+    }
+    //fprintf(stderr, "thread id is %d\n", thread_id);
 
     char *uri = conn_get_uri(conn);
     const Response_t *res = NULL; //here you initialized res
@@ -184,17 +193,25 @@ void handle_get(conn_t *conn) {
         if (errno == EACCES) {
             res = &RESPONSE_FORBIDDEN;
             conn_send_response(conn, res);
+                        // pthread_mutex_unlock(&mutex);
+
             goto out;
         } else if (errno == ENOENT) {
             res = &RESPONSE_NOT_FOUND;
             conn_send_response(conn, res);
+                        // pthread_mutex_unlock(&mutex);
+
             goto out;
         } else {
             res = &RESPONSE_INTERNAL_SERVER_ERROR;
             conn_send_response(conn, res);
+                        // pthread_mutex_unlock(&mutex);
+
             goto out;
+
         }
     }
+
 
     // 2. Get the size of the file.
     // (hint: checkout the function fstat)!
@@ -223,19 +240,26 @@ void handle_get(conn_t *conn) {
     res = &RESPONSE_OK;
     conn_send_response(conn, res);
     conn_send_file(conn, fd, ssize);
-    close(fd);
 
 out:
-    // 5. audit log
+    //sending response zone
     statusCode = response_get_code(res);
     audit("GET", uri, statusCode, thread_id);
+
+    close(fd);
+
 }
 
 //FLOCK
 void handle_put(conn_t *conn) {
+
+    //fprintf(stderr, "WTF\n");
+    int thread_id = 0;
     char *chid = conn_get_header(conn, "Request-Id");
-    int thread_id = atoi(chid);
-    fprintf(stderr, "thread id is %d\n", thread_id);
+    if(chid != NULL) {
+        thread_id = atoi(chid);
+    }
+    //fprintf(stderr, "thread id is %d\n", thread_id);
 
     uint16_t statusCode;
 
@@ -247,66 +271,89 @@ void handle_put(conn_t *conn) {
     bool existed = access(uri, F_OK) == 0;
     debug("%s existed? %d", uri, existed);
 
-    // Acquire the file creation lock
+    // Acquire the file creation lock, #1
     pthread_mutex_lock(&mutex);
 
-    //main part
     int fd = -1;
-    if (!existed) { //not exist
-        fd = open(uri, O_CREAT | O_WRONLY | 0600);
-        if (fd < 0) {
-            debug("%s: %d", uri, errno);
-            res = &RESPONSE_INTERNAL_SERVER_ERROR;
+
+
+    // if (!existed) { // #2 create or truncate file
+    //     fd = open(uri, O_CREAT | O_WRONLY | 0600);
+    //     if (fd < 0) {
+    //         debug("%s: %d", uri, errno);
+    //         res = &RESPONSE_INTERNAL_SERVER_ERROR;
+    //         goto out;
+    //     }
+
+    // } else { 
+    //     fd = open(uri, O_TRUNC | O_WRONLY | 0600);
+    //     if (fd < 0) {
+    //         debug("%s: %d", uri, errno);
+    //         if (errno == EACCES) {
+    //             res = &RESPONSE_FORBIDDEN;
+    //             goto out;
+    //         } else {
+    //             res = &RESPONSE_INTERNAL_SERVER_ERROR;
+    //             goto out;
+    //         }
+    //     }
+    // }
+
+    fd = open(uri, O_CREAT | O_TRUNC | O_WRONLY, 0600); // #2 create or truncate file
+    if (fd < 0) {
+        debug("%s: %d", uri, errno);
+        if (errno == EACCES || errno == EISDIR || errno == ENOENT) {
+            res = &RESPONSE_FORBIDDEN;
+            pthread_mutex_unlock(&mutex);
             goto out;
-        }
-        //initiate flock
-
-        // struct flock lock;
-        // lock.l_type = F_WRLCK;
-        // lock.l_whence = SEEK_SET;
-        // lock.l_start = 0;
-        // lock.l_len = 0;
-
-        flock(fd, LOCK_EX);
-        //do the work
-        res = conn_recv_file(conn, fd);
-        if (res == NULL) {
-            res = &RESPONSE_CREATED;
-        }
-    } else { //exist
-        fd = open(uri, O_TRUNC | 0600);
-        if (fd < 0) {
-            debug("%s: %d", uri, errno);
-            if (errno == EACCES) {
-                res = &RESPONSE_FORBIDDEN;
-                goto out;
-            } else {
-                res = &RESPONSE_INTERNAL_SERVER_ERROR;
-                goto out;
-            }
-        }
-        //do the work
-        res = conn_recv_file(conn, fd);
-        if (res == NULL) {
-            res = &RESPONSE_OK;
+        } else {
+            res = &RESPONSE_INTERNAL_SERVER_ERROR;
+            pthread_mutex_unlock(&mutex);
+            goto out;
         }
     }
 
-    // Close the file and also unlock the flock if it was exist
-    close(fd);
+
+    flock(fd, LOCK_EX); //#3 flock on file
+
+    // #4 Release the file creation lock
+    pthread_mutex_unlock(&mutex);
+    
+    // #5 write
+    res = conn_recv_file(conn, fd);
+    if (res == NULL && existed) {
+        res = &RESPONSE_OK;
+    } else if (res == NULL && !existed) {
+        res = &RESPONSE_CREATED;
+    }
 
 out:
-    // Release the file creation lock
-    pthread_mutex_unlock(&mutex);
 
-    //send the response to client and also send the audit log to stderr
+    //sending response zone
     conn_send_response(conn, res);
     statusCode = response_get_code(res);
     audit("PUT", uri, statusCode, thread_id);
+
+    // #6 release flock on file
+    close(fd);
+
 }
 
 void handle_unsupported(conn_t *conn) {
+
     debug("handling unsupported request");
     // send responses
     conn_send_response(conn, &RESPONSE_NOT_IMPLEMENTED);
+    audit(" ", " ", 501, 0);
+
+    // int thread_id = 0;
+    // char *chid = conn_get_header(conn, "Request-Id");
+    // if(chid != NULL) {
+    //     thread_id = atoi(chid);
+    // }
+
+
+    // conn_send_response(conn, &RESPONSE_NOT_IMPLEMENTED);
+
+    // statusCode = response_get_code(&RES);
 }
