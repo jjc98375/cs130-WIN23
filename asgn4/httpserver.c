@@ -54,12 +54,7 @@ void *worker_thread(void *arg) {
             errx(EXIT_FAILURE, "queue failed to pop");
         }
 
-        // if (connfd != -1) {
-        // fprintf(stderr, "you connected it successfully\n");
-        // fprintf(stderr, "WTF\n");
-
         handle_connection(connfd);
-        // }
         close(connfd);
     }
     return NULL;
@@ -74,13 +69,16 @@ int main(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "t:")) != -1) {
         switch (opt) {
         case 't': num_of_thread = atoi(optarg); break;
-        default: fprintf(stderr, "Usage: %s [-t threads] <port>\n", argv[0]); exit(EXIT_FAILURE);
+        default:
+            debug("Usage: %s [-t threads] <port>\n", argv[0]);
+            return EXIT_FAILURE;
+            //fprintf(stderr, "Usage: %s [-t threads] <port>\n", argv[0]); exit(EXIT_FAILURE);
         }
     }
 
     if (optind != argc - 1) {
-        fprintf(stderr, "Usage: %s [-t threads] <port>\n", argv[0]);
-        exit(EXIT_FAILURE);
+        debug("Usage: %s [-t threads] <port>\n", argv[0]);
+        return EXIT_FAILURE;
     }
 
     port = atoi(argv[optind]);
@@ -93,7 +91,6 @@ int main(int argc, char **argv) {
     pthread_t threads[num_of_thread];
 
     for (int i = 0; i < num_of_thread; i++) {
-        //    fprintf(stderr, "thread %d\n", i);
         if (pthread_create(&threads[i], NULL, worker_thread, NULL) != 0) {
             errx(EXIT_FAILURE, "pthread_create() failed");
         }
@@ -132,17 +129,14 @@ int main(int argc, char **argv) {
 }
 
 void handle_connection(int connfd) {
-    // fprintf(stderr, "in handle connection\n");
 
     conn_t *conn = conn_new(connfd);
     const Response_t *res = conn_parse(conn);
 
     if (res != NULL) {
-        // fprintf(stderr, "invalid response\n");
         conn_send_response(conn, res);
     } else {
         debug("%s", conn_str(conn));
-        // fprintf(stderr, "valid response\n");
 
         const Request_t *req = conn_get_request(conn);
         if (req == &REQUEST_GET) {
@@ -158,8 +152,6 @@ void handle_connection(int connfd) {
 
 void handle_get(conn_t *conn) {
 
-    // fprintf(stderr, "in get\n");
-
     // pthread_mutex_lock(&mutex);
 
     int thread_id = 0;
@@ -167,7 +159,6 @@ void handle_get(conn_t *conn) {
     if (chid != NULL) {
         thread_id = atoi(chid);
     }
-    //fprintf(stderr, "thread id is %d\n", thread_id);
 
     char *uri = conn_get_uri(conn);
     const Response_t *res = NULL; //here you initialized res
@@ -184,6 +175,8 @@ void handle_get(conn_t *conn) {
     //   c. other error? -- use RESPONSE_INTERNAL_SERVER_ERROR
     // (hint: check errno for these cases)!
     int fd = open(uri, O_RDONLY, 0666);
+    flock(fd, LOCK_EX); //#3 flock on file
+
     if (fd < 0) {
         if (errno == EACCES) {
             res = &RESPONSE_FORBIDDEN;
@@ -212,6 +205,7 @@ void handle_get(conn_t *conn) {
     fstat(fd, &s);
     off_t ssize = s.st_size;
 
+    // <extra test>
     // if (fstat(fd, &file_stat) != 0) {
     //     conn_send_response(conn, &RESPONSE_INTERNAL_SERVER_ERROR);
     //     close(fd);
@@ -330,19 +324,10 @@ out:
 }
 
 void handle_unsupported(conn_t *conn) {
+    // do we need lock in here as well?
 
     debug("handling unsupported request");
     // send responses
     conn_send_response(conn, &RESPONSE_NOT_IMPLEMENTED);
     audit(" ", " ", 501, 0);
-
-    // int thread_id = 0;
-    // char *chid = conn_get_header(conn, "Request-Id");
-    // if(chid != NULL) {
-    //     thread_id = atoi(chid);
-    // }
-
-    // conn_send_response(conn, &RESPONSE_NOT_IMPLEMENTED);
-
-    // statusCode = response_get_code(&RES);
 }

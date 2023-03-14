@@ -7,7 +7,12 @@ FORMATS  = $(SOURCES:%.c=.format/%.c.fmt) $(HEADERS:%.h=.format/%.h.fmt)
 
 CC       = clang
 FORMAT   = clang-format
-CFLAGS   = -Wall -Wpedantic -Werror -Wextra -DDEBUG
+#for when you debug
+# CFLAGS   = -Wall -Wpedantic -Werror -Wextra -DDEBUG -pthread
+
+#for when you test
+CFLAGS   = -Wall -Wpedantic -Werror -Wextra -pthread
+
 
 .PHONY: all clean format
 
