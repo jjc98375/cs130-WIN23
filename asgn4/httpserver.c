@@ -37,6 +37,7 @@ void handle_unsupported(conn_t *);
 //static declare
 static queue_t *Q;
 pthread_mutex_t mutex;
+pthread_mutex_t mutexG;
 
 //audit function
 void audit(const char *method, const char *uri, int statusCode, int thread_id) {
@@ -61,6 +62,9 @@ void *worker_thread(void *arg) {
 }
 
 int main(int argc, char **argv) {
+
+    pthread_mutex_init(&mutex, NULL);
+    // pthread_mutex_init(&mutexG, NULL);
 
     int num_of_thread = 4;
     int port;
@@ -111,6 +115,9 @@ int main(int argc, char **argv) {
         queue_push(Q, (void *) connfd);
     }
 
+    pthread_mutex_destroy(&mutex);
+    // pthread_mutex_destroy(&mutexG);
+
     return EXIT_SUCCESS;
 }
 
@@ -140,8 +147,6 @@ void handle_connection(int connfd) {
 
 void handle_get(conn_t *conn) {
 
-    // pthread_mutex_lock(&mutex);
-
     int thread_id = 0;
     char *chid = conn_get_header(conn, "Request-Id");
     if (chid != NULL) {
@@ -160,24 +165,24 @@ void handle_get(conn_t *conn) {
     //   b. Cannot find the file -- use RESPONSE_NOT_FOUND
     //   c. other error? -- use RESPONSE_INTERNAL_SERVER_ERROR
     // (hint: check errno for these cases)!
+    pthread_mutex_lock(&mutex);
 
     int fd = open(uri, O_RDONLY, 0666);
-    flock(fd, LOCK_SH); //#3 flock on file
-
     if (fd < 0) {
         if (errno == EACCES) {
             res = &RESPONSE_FORBIDDEN;
             conn_send_response(conn, res);
 
-            // pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex);
             goto out;
         }
 
-        else if (errno == ENOENT || errno == EBADF) {
+        // else if (errno == ENOENT || errno == EBADF) {
+        else if (errno == ENOENT) {
             res = &RESPONSE_NOT_FOUND;
             conn_send_response(conn, res);
 
-            // pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex);
             goto out;
         }
 
@@ -187,10 +192,12 @@ void handle_get(conn_t *conn) {
             res = &RESPONSE_INTERNAL_SERVER_ERROR;
             conn_send_response(conn, res);
 
-            // pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex);
             goto out;
         }
     }
+    flock(fd, LOCK_SH); //#3 flock on file
+    pthread_mutex_unlock(&mutex);
 
     // 2. Get the size of the file.
     // (hint: checkout the function fstat)!
@@ -211,8 +218,6 @@ void handle_get(conn_t *conn) {
     if (S_ISDIR(s.st_mode)) {
         res = &RESPONSE_FORBIDDEN;
         conn_send_response(conn, res);
-
-        // pthread_mutex_unlock(&mutex);
         goto out;
     }
 
@@ -282,8 +287,6 @@ void handle_put(conn_t *conn) {
     // }
 
     fd = open(uri, O_CREAT | O_WRONLY, 0600); // #2 create or truncate file
-    flock(fd, LOCK_EX); //#3 flock on file
-    ftruncate(fd, 0); // truncate
 
     if (fd < 0) {
         debug("%s: %d", uri, errno);
@@ -297,6 +300,9 @@ void handle_put(conn_t *conn) {
             goto out;
         }
     }
+
+    flock(fd, LOCK_EX); //#3 flock on file
+    ftruncate(fd, 0); // truncate
 
     // #4 Release the file creation lock
     pthread_mutex_unlock(&mutex);
