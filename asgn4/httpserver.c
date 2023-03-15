@@ -122,6 +122,7 @@ void handle_connection(int connfd) {
     if (res != NULL) {
         conn_send_response(conn, res);
     } else {
+
         debug("%s", conn_str(conn));
 
         const Request_t *req = conn_get_request(conn);
@@ -133,6 +134,7 @@ void handle_connection(int connfd) {
             handle_unsupported(conn);
         }
     }
+
     conn_delete(&conn);
 }
 
@@ -158,27 +160,34 @@ void handle_get(conn_t *conn) {
     //   b. Cannot find the file -- use RESPONSE_NOT_FOUND
     //   c. other error? -- use RESPONSE_INTERNAL_SERVER_ERROR
     // (hint: check errno for these cases)!
+
     int fd = open(uri, O_RDONLY, 0666);
-    flock(fd, LOCK_EX); //#3 flock on file
+    flock(fd, LOCK_SH); //#3 flock on file
 
     if (fd < 0) {
         if (errno == EACCES) {
             res = &RESPONSE_FORBIDDEN;
             conn_send_response(conn, res);
-            // pthread_mutex_unlock(&mutex);
 
+            // pthread_mutex_unlock(&mutex);
             goto out;
-        } else if (errno == ENOENT) {
+        }
+
+        else if (errno == ENOENT || errno == EBADF) {
             res = &RESPONSE_NOT_FOUND;
             conn_send_response(conn, res);
-            // pthread_mutex_unlock(&mutex);
 
+            // pthread_mutex_unlock(&mutex);
             goto out;
-        } else {
+        }
+
+        else {
+            debug("Unexpected error: %d\n", errno);
+
             res = &RESPONSE_INTERNAL_SERVER_ERROR;
             conn_send_response(conn, res);
-            // pthread_mutex_unlock(&mutex);
 
+            // pthread_mutex_unlock(&mutex);
             goto out;
         }
     }
@@ -202,17 +211,21 @@ void handle_get(conn_t *conn) {
     if (S_ISDIR(s.st_mode)) {
         res = &RESPONSE_FORBIDDEN;
         conn_send_response(conn, res);
-        close(fd);
+
+        // pthread_mutex_unlock(&mutex);
         goto out;
     }
 
+    // pthread_mutex_unlock(&mutex);
+
     // 4. Send the file
     // (hint: checkout the conn_send_file function!)
-    res = conn_send_file(conn, fd, ssize);
-    if (res != NULL)
-        conn_send_response(conn, res);
-    else
-        res = &RESPONSE_OK;
+    conn_send_file(conn, fd, ssize);
+
+    // if (res != NULL)
+    //     conn_send_response(conn, res);
+    // else
+    res = &RESPONSE_OK;
 
 out:
     //sending response zone
