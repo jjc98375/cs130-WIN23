@@ -11,4 +11,4 @@ Main function covers the overall implementation where it creates multiple thread
 
 handleConnection() is basically a function that handles handleGet, handlePut, and handleUnsupported functions. Those functions are handled by handleConnection and handleConnection using conn_parse() and evaluate the returned request type. By this requestType, it calls the handle function accordingly. All function send response accordingly. Furthermore, there is another functioanlity that keeps the log of request called 'audit log'. 
 
-Overall function is designed to not terminated unless termination command.
+Overall function is designed to not terminated unless termination command receives.
