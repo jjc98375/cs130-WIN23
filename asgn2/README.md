@@ -1,6 +1,3 @@
-### README for Assignment 2: HTTP Server
-
-```markdown
 # Assignment 2: HTTP Server
 
 ## Overview
